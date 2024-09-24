@@ -7,7 +7,7 @@ struct transition{
     char symbol;             
     int next_state;         
 };
-
+ 
 struct state{
     int id;                   
     bool is_accepting;  
@@ -21,16 +21,17 @@ vector<int> find_paths(char letter, int index){
     vector<int> paths;
 
     for(auto transition : transition_table[index]){
-        if(letter == transition.symbol || letter == '-')
+        if(letter == transition.symbol || letter == '-' || transition.symbol == '-')
             paths.push_back(transition.next_state);
     }
 
     return paths;
 }
 
-bool is_terminal_symbol(char symbol){
+bool is_terminal_symbol(string word){
+    char symbol = word.back();
     for(auto c: symbols){
-        if(c == symbol)
+        if(c == symbol || c == '-')
             return true;
     }
 
@@ -39,12 +40,12 @@ bool is_terminal_symbol(char symbol){
 
 // backtracking
 bool process_string(vector<state> states, string input, string currtn, int indx_s, int indx_i) {
-    if(states[indx_s].is_accepting && currtn == input && is_terminal_symbol(currtn[indx_i])){
+    if(states[indx_s].is_accepting && currtn == input && is_terminal_symbol(currtn)){
         return true;
     }else{
         vector<int> paths = find_paths(input[indx_i], indx_s);
 
-        for(auto path : paths){
+        for(auto path : paths){ //problema ele considera que passar de estado == acrescentar letra
             if(process_string(states, input, currtn + input[indx_i], path, indx_i + 1))
                 return true;
         }
@@ -114,7 +115,8 @@ int main(){
     }
         
     for(auto input: input_strings){
-        (process_string(states, input, "", 0, 0))? cout << "aceita\n" : cout << "rejeita\n";
+        for(int i = 0; i<n_initial_states; i++)
+            (process_string(states, input, "", i, 0))? cout << "aceita\n" : cout << "rejeita\n";
     }
 
     return 0;
