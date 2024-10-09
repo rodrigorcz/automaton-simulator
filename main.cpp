@@ -1,5 +1,6 @@
 #include <iostream>
-#include <bits/stdc++.h>
+#include <unordered_map>
+#include <vector>
 
 using namespace std;
 
@@ -17,42 +18,9 @@ vector<char> symbols;
 vector<string> input_strings;
 unordered_map<int, vector<transition>> transition_table; 
 
-vector<int> find_paths(char letter, int index){
-    vector<int> paths;
-
-    for(auto transition : transition_table[index]){
-        if(letter == transition.symbol || letter == '-' || transition.symbol == '-')
-            paths.push_back(transition.next_state);
-    }
-
-    return paths;
-}
-
-bool is_terminal_symbol(string word){
-    char symbol = word.back();
-    for(auto c: symbols){
-        if(c == symbol || c == '-')
-            return true;
-    }
-
-    return false;
-}
-
-// backtracking
-bool process_string(vector<state> states, string input, string currtn, int indx_s, int indx_i) {
-    if(states[indx_s].is_accepting && currtn == input && is_terminal_symbol(currtn)){
-        return true;
-    }else{
-        vector<int> paths = find_paths(input[indx_i], indx_s);
-
-        for(auto path : paths){ //problema ele considera que passar de estado == acrescentar letra
-            if(process_string(states, input, currtn + input[indx_i], path, indx_i + 1))
-                return true;
-        }
-    }
-
-    return false;
-}
+bool process_string(vector<state> states, string input, string currtn, int indx_s, int indx_i);
+vector<pair<int,bool> > find_paths(char letter, int index);
+bool is_terminal_symbol(string word);
 
 int main(){
 
@@ -116,8 +84,56 @@ int main(){
         
     for(auto input: input_strings){
         for(int i = 0; i<n_initial_states; i++)
-            (process_string(states, input, "", i, 0))? cout << "aceita\n" : cout << "rejeita\n";
+            (process_string(states, input, "-", i, 0))? cout << "aceita\n" : cout << "rejeita\n";
     }
 
     return 0;
+}
+
+
+// backtracking
+bool process_string(vector<state> states, string input, string currtn, int indx_s, int indx_i) {
+    if(states[indx_s].is_accepting && currtn == input && is_terminal_symbol(currtn)){
+        return true;
+    }else{
+        if(currtn == "-") currtn.clear();
+
+        vector<pair<int, bool>> paths = find_paths(input[indx_i], indx_s);
+
+        for(auto path : paths){
+            if(path.second && process_string(states, input, currtn + input[indx_i], path.first, indx_i + 1))
+                return true;
+            
+            if(!path.second && process_string(states, input, currtn, path.first, indx_i)) // AFN-Lambda
+                return true;
+        }
+    }
+
+    return false;
+}
+
+vector<pair<int,bool>> find_paths(char letter, int index){
+    vector<pair<int, bool>> paths;
+
+    for(auto transition : transition_table[index]){
+        if(letter == transition.symbol)
+            paths.push_back({transition.next_state, true});
+        
+        if(transition.symbol == '-') // AFN-Lambda
+            paths.push_back({transition.next_state, false});
+
+    }
+
+    return paths;
+}
+
+bool is_terminal_symbol(string word){
+    char last_symbol = word.back();
+    
+    for(auto sym: symbols){
+        if(sym == last_symbol || last_symbol == '-')
+            return true;
+    }
+
+    return false;
 }
